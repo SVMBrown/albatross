@@ -1,10 +1,32 @@
 (ns albatross.core-test
     (:require
      [cljs.test :refer-macros [deftest is testing]]
-     [albatross.core :refer [multiply]]))
+     [albatross.core :as c]))
 
-(deftest multiply-test
-  (is (= (* 1 2) (multiply 1 2))))
+(def config1 {:name "config 1"
+              :docker
+              [{:url "foo/"
+                :user "a"
+                :pass "b"
+                :images
+                [{:workspace "."
+                  :name "my/img"
+                  :tags ["foo" "bar" "baz"]}]}]})
 
-(deftest multiply-test-2
-  (is (= (* 75 10) (multiply 10 75))))
+(def config2 {:name "config 2"
+              :docker
+              {:url "foo/"
+               :user "a"
+               :pass "b"
+               :images
+               [{:workspace "."
+                 :name "my/img"
+                 :tags ["foo" "bar" "baz"]}]}})
+
+(deftest docker
+  (doseq [config [config1 config2]]
+    (println (:name config))
+    (is (true?
+         (#(and (vector? %) (every? string? %))
+          (c/docker-instructions config)))
+       (:name config))))

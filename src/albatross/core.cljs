@@ -1,91 +1,72 @@
 (ns ^:figwheel-hooks albatross.core
   (:require
    [clojure.string :as string]
-   ["fs" :as fs]))
+#_   [weaver.core :as w]
+ #_  ["fs" :as fs]))
+
+(enable-console-print!)
 
 (println "This text is printed from src/albatross/core.cljs. Go ahead and edit it and see reloading in action.")
-
-(defn multiply [a b] (* a b))
 
 (defonce child-process (js/require "child_process"))
 
 ;; define your app data so that it doesn't get over-written on reload
 (defonce app-state (atom {:text "Hello world!"}))
-(def error-log js/console.error)
-(def warn-log js/console.warn)
-(def info-log js/console.info)
-(def debug-log js/console.debug)
 
-(defn- convert-and-error-log [arg]
-  (js/console.error
-   (if (or (string? arg) (= (type arg) js/Error))
-     arg
-     (clj->js arg))))
+(defn docker-image-instructions
+  "[albatross-config repo-config image-config] -
+   Compiles the instruction list for an image"
+  [_
+   {url :url}
+   {image-name :name
+    tags :tags
+    workspace :workspace
+    :as image}]
+  (into
+   [(str "echo 'handling docker image: " image-name "'")
+    (str "docker build -t " url image-name " " (string/join " " (map
+                                                                 #(str "-t " url image-name ":" %)
+                                                                 tags)) " " workspace)
+    (str "docker push " url image-name)]
+   (map #(str "docker push " url image-name ":" %) tags)))
 
-(defn warn-and-exit [& msgs]
-  (doseq [msg msgs]
-    (convert-and-error-log msg))
-  (js/process.exit 1))
+(defn docker-repo-instructions
+  "[albatross-config repo-config] -
+   Compiles the instruction list for a repo config"
+  [albatross-config
+   {url :url
+    user :user
+    pass :pass
+    images :images
+    :as repo-config}]
+  (when-not (string? url)
+    (throw (js/Error. ":docker step must have a valid (string) url")))
+  (into
+   [(str "echo 'handling docker publishing step for repository: " url "'")
+    (str "docker login -u " user " -p " pass " " url)]
+   (mapcat
+    (partial docker-image-instructions
+             albatross-config
+             repo-config)
+    images)))
 
+(defn docker-instructions
+  "[albatross-config] -
+    Pulls the docker key out of the config and compiles the instruction list for all docker configs. If :docker is a map, it is treated as a one-element list of repos"
+  [{docker :docker
+    :as root-config}]
+  (into
+   ["echo beginning docker publish step..."]
+   (mapcat
+    (partial docker-repo-instructions
+             (dissoc root-config :docker))
+    (cond
+      (map? docker) [docker]
+      (vector? docker) docker
+      :else (do
+              (println docker)
+              (throw (js/Error. ":docker value must be either a map or a vector of maps." docker)))))))
 
-(defn get-env
-  ([key]
-   (get-env (name key) nil))
-  ([key not-found]
-   (if-some [result (aget (.-env js/process) (name key))]
-     result
-     not-found)))
-
-(defn exec-safe
-  ([command] (exec-safe
-              command
-              {:timeout 180000
-               :encoding "UTF-8"}))
-  ([command opts]
-   (try
-     (.execSync child-process
-                command
-                (->> opts
-                     (merge
-                      {:timeout 180000
-                       :encoding "UTF-8"})
-                     (clj->js)))
-     (catch js/Error e
-       (.error js/console e)
-       (throw e)))))
-
-(defn docker-deploy
-  [{:keys [tag workspace user pass url]}]
-  (cond
-
-    (nil? tag)
-    (do (.error js/console "cannot use docker image without provided tag")
-        (.exit js/process 1))
-
-    (nil? workspace)
-    (do (.error js/console "cannot use docker image without workspace")
-        (.exit js/process 1))
-
-    (nil? user)
-    (do (.error js/console "cannot use docker image without provided user")
-        (.exit js/process 1))
-
-    (nil? pass)
-    (do (.error js/console "cannot use docker image without provided pass")
-        (.exit js/process 1))
-
-    (nil? url)
-    (do (.error js/console "cannot use docker image without provided url")
-        (.exit js/process 1))
-
-    :else
-    (do
-      (exec-safe (str "docker build -t " tag " " workspace))
-      (exec-safe (str "docker login -u " user " -p " pass " " url))
-      (exec-safe (str "docker push " tag)))))
-
-(defn kubectl []
-  (println "I don't work yet!"))
 
 
 ;; specify reload hook with ^;after-load metadata
@@ -93,5 +74,4 @@
   ;; optionally touch your app-state to force rerendering depending on
   ;; your application
   ;; (swap! app-state update-in [:__figwheel_counter] inc)
-  (.log js/console "Reloaded!")
-)
+  (.log js/console "Reloaded!"))

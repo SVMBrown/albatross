@@ -7,8 +7,8 @@
   :min-lein-version "2.7.1"
 
   :dependencies [[org.clojure/clojure "1.9.0"]
-                 [org.clojure/clojurescript "1.10.339"]
-]
+                 [weaver "0.1.4-SNAPSHOT"]
+                 [org.clojure/clojurescript "1.10.339"]]
 
   :source-paths ["src"]
 
