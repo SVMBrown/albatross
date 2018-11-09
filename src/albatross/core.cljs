@@ -3,6 +3,7 @@
    [clojure.string :as string]
    [albatross.docker :as docker]
    [albatross.kubernetes :as k8s]
+   [albatross.weaver :as w]
 #_   [weaver.core :as w]
  #_  ["fs" :as fs]))
 
