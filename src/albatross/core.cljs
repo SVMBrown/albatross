@@ -17,10 +17,9 @@
 (defonce app-state (atom {:text "Hello world!"}))
 
 (defn docker-instructions
-  "[albatross-config] -
-    Pulls the docker key out of the config and compiles the instruction list for all docker configs. If :docker is a map, it is treated as a one-element list of repos"
-  [{docker :docker
-    :as root-config}]
+  "[docker] -
+    compiles the instruction list for a docker config (or a list of docker configs)."
+  [docker]
   (into
    ["echo beginning docker publish step..."]
    (mapcat
@@ -35,10 +34,9 @@
 
 
 (defn k8s-instructions
-  "[albatross-config] -
-    Pulls the :kubernetes key out of the config and compiles the instruction list for all kubernetes configs. If :kubernetes is a map, it is treated as a one-element list of repos"
-  [{k8s :kubernetes
-    :as root-config}]
+  "[k8s] -
+    Compiles the instruction list for a kubernetes config."
+  [k8s]
   (into
    ["echo beginning kubernetes step..."]
    (mapcat
@@ -51,6 +49,88 @@
         (println k8s)
         ;;TODO Change error message
         (throw (js/Error. ":kubernetes value must be either a map or a vector of maps." k8s)))))))
+
+(defmulti deployment-instructions :type)
+
+(defmethod deployment-instructions :default [step]
+  (throw (js/Error. (str "Unrecognized deployment step type for deployment step: " step))))
+
+(defmethod deployment-instructions :shell [{:keys [exec]
+                                            :as step}]
+  (cond
+    (string? exec) [exec]
+    (and (vector? exec) (every? string? exec)) exec
+    :else (throw (js/Error. (str "Deployment step of type :shell must have an :exec key, and :exec must be either a string or a vector of strings.\n" "Step:\n" step)))))
+
+(defmethod deployment-instructions :script [{:keys [file]
+                                             :as step}]
+  (cond
+    (string? file) [(if (some
+                         #(string/starts-with? file %)
+                         ["/"
+                          "./"
+                          "../"])
+                      file
+                      (str "./" file))]
+    :else (throw (js/Error. (str "Deployment step of type :script must have a :file key, which is a string.\n" "Step:\n" step)))))
+
+
+
+;; EXAMPLE CONFIG
+#_ {:some "config"
+    :retries "might be specified here"
+    :rollback-strategy "maybe?"
+    :and-any "other top-level stuff"
+    :pre-deploy-hooks [{:type :weaver
+                        :some "weaver"
+                        :config "options"
+                        :that ["will" "be" "transformed" "into" "an" "effectful" "function"]
+                        :which ["will" "be" "run" "before" "evaluation" "of" "deploy" "instructions"]
+                        :BUT ["will" "be" "run" "AFTER" "the" "generation" "of" "said" "instructions"]}
+                       {:type :any-other-effectful-things-similar-to-the-above}
+                       {:type :for-example
+                        :it-could-be {:git "pull"
+                                      :lein "build"
+                                      :npm "install"
+                                      :or ["any" "other" "effectful" "thing" "you" "may" "need"]}}
+                       {:type :shell
+                        :command "should have an escape hatch here probably!"}]
+    :deployment [{:type :docker
+                  :some "docker"
+                  :repository "configuration"
+                  :images [{:some "single image config"}
+                           {:another "image for the same repo"}]}
+                 {:type :kubernetes
+                  :some "kubernetes"
+                  :cluster "configuration"
+                  :actions [{:action-type :apply-dir
+                             :dir "./k8s" ;; NOTE: if you want to template this directory, it must be done in the pre-deploy-step.
+                                          ;;       However, the albatross config is assumed to be weaver templated,
+                                          ;;       so you can use weaver to share between k8s action config and weaver config.
+                             :action-name "some semantic name for a kubernetes action"}
+                            {:action-type :some-other-k8s-action
+                             :some-config "for this action"}]}]
+    :post-deploy-hooks [{:type :git-or-something
+                         :maybe "you"
+                         :want "to push a tag"
+                         :and/or "send a slack message"}
+                        {:type :some-other-effectful-thing
+                         :these "will happen in order"
+                         :and "only on successful deployment"}
+                        {:type :shell
+                         :command "should have an escape hatch here too!"}]
+    :deploy-failure-hooks [{:type :slack-or-email-or-something?
+                            :these "effects"
+                            :will "be triggered"
+                            :when "a deploy fails"}
+                           {:type :shell
+                            :command "should have an escape hatch here as well!"}]}
+;;NOTE: A lot of the above is not supported yet.
+;; It is maybe over the top, but it might be worth considering for future
+;; This should maybe not fully replace jenkins, so the scope of above might need to be limited
+
+
+
 
 
 ;;TODO: add git and leiningen steps to albatross

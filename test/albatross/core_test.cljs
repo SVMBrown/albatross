@@ -23,7 +23,7 @@
                  :name "my/img"
                  :tags ["foo" "bar" "baz"]}]}})
 
-(deftest docker
+#_(deftest docker
   (doseq [config [config1 config2]]
     (println (:name config))
     (is (true?
