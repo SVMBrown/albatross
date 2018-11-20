@@ -10,7 +10,7 @@
                  [weaver "0.1.4-SNAPSHOT"]
                  [org.clojure/clojurescript "1.10.339"]]
 
-  :source-paths ["src"]
+  :source-paths ["src" "node_modules"]
 
   :aliases {"fig"       ["trampoline" "run" "-m" "figwheel.main"]
             "fig:build" ["trampoline" "run" "-m" "figwheel.main" "-b" "dev" "-r"]

@@ -1,4 +1,5 @@
-^{
+^{:watch-dirs ["test" "src"]
+  :ring-server-options {:port 9551}
   ;; use an alternative landing page for the tests so that we don't
   ;; launch the application
   ;; :open-url "http://[[server-hostname]]:[[server-port]]/test.html"

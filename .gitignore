@@ -13,3 +13,15 @@ pom.xml
 .rebel_readline_history
 
 \.lein-failures
+
+node_modules/
+
+test/templates/bar\.json
+
+test/templates/foo\.json
+
+test/test-configs/bar\.json
+
+test/test-configs/foo\.json
+
+weaver_backups/

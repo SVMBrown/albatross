@@ -1,4 +1,4 @@
-^{:watch-dirs ["test" "src"]
+^{:watch-dirs ["test" "src" "node_modules"]
   :auto-testing true}
 {:main albatross.core
  :target :nodejs}

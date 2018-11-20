@@ -1,0 +1,2 @@
+{:shell :kw-env/SHELL
+ :short-hash :git/short-hash}
