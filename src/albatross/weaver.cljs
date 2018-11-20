@@ -2,7 +2,7 @@
   (:require [clojure.string :as string]
             [cljs.reader :as edn]
             [weaver.core :as w]
-            [weaver.script-utils :as utils]
+            [albatross.script-utils :as utils]
             [weaver.interop]
             ["fs" :as fs]
             ["shelljs" :as sh]))
