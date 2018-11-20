@@ -158,7 +158,11 @@
 (defn generate-deployment-fn [instructions]
   #(vec
     (for [instruction instructions]
-      {:instruction instruction :result (exec instruction)})))
+      (println instruction)
+      (let [result (exec instruction)]
+        (do
+          (println result)
+          {:instruction instruction :result result})))))
 
 (defn generate-pre-deploy-fn [hooks]
   #(doseq [{:keys [hook-fn]} hooks]
@@ -184,7 +188,9 @@
          pre-deploy-fn (generate-pre-deploy-fn pre-deploy-hooks)
          post-deploy-hooks []
          post-deploy-fn #(println "WARNING: POST-DEPLOY ISN'T IMPLEMENTED")]
-     {:pre-deploy-hooks pre-deploy-hooks
+     ;;TODO: make docker and other commands print progress
+     {:config config
+      :pre-deploy-hooks pre-deploy-hooks
       :pre-deploy-fn pre-deploy-fn
       :instructions instructions
       :deployment-fn deployment-fn

@@ -2,8 +2,7 @@
   (:require [clojure.string :as string]))
 
 (defn docker-build-instruction [image tags workspace]
-  (str "docker build -t "
-       image
+  (str "docker build "
        " " (string/join " " (map
                              #(str "-t " image ":" %)
                              tags))
@@ -22,7 +21,9 @@
    {image-name :name
     tags :tags
     workspace :workspace}]
-  (let [image (str url image-name)]
+  (let [image (if (re-find (re-pattern (str "^" url)) image-name)
+                image-name
+                (str url image-name))]
     (into
      [(str "echo 'handling docker image: " image "'")
       (docker-build-instruction image (or (not-empty tags) []) workspace)
