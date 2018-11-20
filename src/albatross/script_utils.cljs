@@ -1,6 +1,7 @@
 (ns albatross.script-utils
   (:require
    [cljs.reader :as edn]
+   ["shelljs" :as sh]
    ["fs" :as fs]))
 
 (defn read-edn-file [file-name]
@@ -11,7 +12,7 @@
 
 (defn write-file [path body]
   (let [[_ dir file] (re-matches #"(.*/)?([^/]*)$" path)]
-    (fs/mkdirSync dir #js {:recursive true})
+    (sh/mkdir "-p" dir)
     (fs/writeFileSync path body)))
 
 (defn process-cli-args
