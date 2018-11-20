@@ -3,6 +3,7 @@
    [clojure.string :as string]
    [albatross.docker :as docker]
    [albatross.kubernetes :as k8s]
+   [albatross.script-utils :as utils]
    [albatross.weaver :as w]
    [weaver.core]
  #_  ["fs" :as fs]))
@@ -165,7 +166,13 @@
 
 (defn generate-deployment
   ([template]
-   (generate-deployment (or (:weaver/context template) {}) (dissoc template :weaver/context)))
+   (if (string? template)
+     (let [template-data (utils/read-edn-file template)
+           template-context (meta template-data)]
+       (generate-deployment (merge (or (:weaver/context template) {})
+                                   template-context)
+                            (dissoc template-data :weaver/context)))
+     (generate-deployment (or (:weaver/context template) {}) (dissoc template :weaver/context))))
   ([context template]
    (let [config (assoc (weaver.core/process context template)
                        :albatross.weaver/context (update context

@@ -1,5 +1,6 @@
 (ns albatross.script-utils
   (:require
+   [cljs.reader :as edn]
    ["fs" :as fs]))
 
 (defn read-edn-file [file-name]
