@@ -183,7 +183,7 @@
       :deployment-fn deployment-fn
       :post-deploy-hooks post-deploy-hooks ;; TODO: NOT IMPLEMENTED
       :post-deploy-fn    post-deploy-fn    ;; TODO: NOT IMPLEMENTED
-      :run-deployment #(do
+      :run-deployment #(vector
                          (pre-deploy-fn)
                          (deployment-fn)
                          (post-deploy-fn))})))
