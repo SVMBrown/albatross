@@ -2,6 +2,7 @@
   (:require [clojure.string :as string]
             [cljs.reader :as edn]
             [weaver.core :as w]
+            [weaver.script-utils :as utils]
             [weaver.interop]
             ["fs" :as fs]
             ["shelljs" :as sh]))
@@ -9,16 +10,6 @@
 (set! weaver.interop/*exit-fn* (fn [] (throw (js/Error. "Unknown weaver error!"))))
 
 
-(defn read-edn-file [file-name]
-  (-> file-name (fs/readFileSync #js {:encoding "UTF-8"}) edn/read-string))
-
-(defn pretty-json [js-obj]
-  (.stringify js/JSON js-obj nil 2))
-
-(defn write-file [path body]
-  (let [[_ dir file] (re-matches #"(.*/)?([^/]*)$" path)]
-    (fs/mkdirSync dir #js {:recursive true})
-    (fs/writeFileSync path body)))
 
 (defn backup-template-destinations [templates]
   (let [timestamp (js/Date.now)
@@ -29,7 +20,7 @@
                       (catch js/Error e
                         (println "Encountered error reading 'to' path for template:\n" template "\nError:\n" e "\nSkipping...\n\n\n")
                         nil))]
-        (write-file (string/replace to #"^(\./)?" base-path) body)))))
+        (utils/write-file (string/replace to #"^(\./)?" base-path) body)))))
 
 (defn expand-dirs [{:keys [from to] :as tmp}]
   (let [to (or to
@@ -70,11 +61,11 @@
        (backup-template-destinations file-templates)
        (doseq [{:keys [from to] :as template} file-templates]
          (->> from
-              read-edn-file
+              utils/read-edn-file
               process-template
               clj->js
-              pretty-json
-              (write-file to))))
+              utils/pretty-json
+              (utils/write-file to))))
      :description (str "Weaver Hook:\n"
                        "Will process edn templates and generate json configs from them.\n"
                        "Existing files are backed up in weaver_configs/\n"
