@@ -1,12 +1,11 @@
 {
   "name": "albatross-cljs",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Declarative Deployment Scripting tool",
   "license": "MIT",
   "dependencies": {
-    "lumo-cljs": "^1.8.0",
     "shelljs": "^0.8.3",
-    "weaver-cljs": "^0.1.5"
+    "weaver-cljs": "^0.1.6"
   },
   "files": [
     "src/"
