@@ -178,7 +178,8 @@
                             (dissoc template-data :weaver/context)))
      (generate-deployment (or (:weaver/context template) {}) (dissoc template :weaver/context))))
   ([context template]
-   (let [config (assoc (weaver.core/process context template)
+   (let [template (dissoc template :weaver/context)
+         config (assoc (weaver.core/process context template)
                        :albatross.weaver/context (update context
                                                          :config #(weaver.core/process-config
                                                                    (dissoc context :config) %))) ;;TODO: provide this magic from weaver, NOT here
