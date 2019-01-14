@@ -156,17 +156,30 @@
                    (clj->js)))))
 
 (defn generate-deployment-fn [instructions]
-  #(vec
-    (for [instruction instructions]
-      (println instruction)
-      (let [result (exec instruction)]
-        (do
-          (println result)
-          {:instruction instruction :result result})))))
+  #(mapv (fn [instruction]
+           (println "Running instruction: ")
+           (println instruction)
+           (println "-------------------------")
+           (let [result (exec instruction)]
+             (println "RESULT: ")
+             (println result)
+             (println "---------SUCCESS---------")
+             {:instruction instruction :result result}))
+         instructions))
 
 (defn generate-pre-deploy-fn [hooks]
-  #(doseq [{:keys [hook-fn]} hooks]
-     (hook-fn)))
+  #(mapv
+    (fn [{:keys [hook-fn description]}]
+      (println "Running pre-deploy hook")
+      (println description)
+      (println "-------------------------")
+      (let [result (hook-fn)]
+        (println "RESULT: ")
+        (println result)
+        (println "---------SUCCESS---------")
+        {:description description
+         :result result}))
+    hooks))
 
 (defn generate-deployment
   ([template]
@@ -177,6 +190,7 @@
                                    template-context)
                             (dissoc template-data :weaver/context)))
      (generate-deployment (or (:weaver/context template) {}) (dissoc template :weaver/context))))
+  ;; If a context is provided, 
   ([context template]
    (let [template (dissoc template :weaver/context)
          config (assoc (weaver.core/process context template)

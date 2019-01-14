@@ -14,11 +14,13 @@
 (defn backup-template-destinations [templates]
   (let [timestamp (js/Date.now)
         base-path (str "weaver_backups/backup_" timestamp "/")]
+    (println "Backing up previously generated files... \n")
     (doseq [{:keys [to] :as template} templates]
       (if-let [body (try
+                      (println "Reading 'to' path for template to back up previous versions: \n" template "\n")
                       (fs/readFileSync to)
                       (catch js/Error e
-                        (println "Encountered error reading 'to' path for template:\n" template "\nError:\n" e "\nSkipping...\n\n\n")
+                        (println "Encountered error reading 'to' path for template:\n" template "\nError:\n" e "\n If this is your first time deploying, this is likely because there is no file to back up. \n Skipping...\n\n\n")
                         nil))]
         (utils/write-file (string/replace to #"^(\./)?" base-path) body)))))
 
@@ -55,7 +57,18 @@
 (defn weaver-hook [{:keys [templates
                            context]}]
   (let [process-template   (partial w/process-template context)
-        file-templates     (vec (mapcat expand-dirs templates))]
+        file-templates     (vec (mapcat expand-dirs templates))
+        description        (str "Weaver Hook:\n"
+                                "Will process edn templates and generate json configs from them.\n"
+                                "Existing files are backed up in weaver_configs/\n"
+                                "NOTE: Files are searched for when the hook is GENERATED, not when it is run\n"
+                                "Files Affected:\n"
+                                (string/join "\n"
+                                             (map
+                                              (fn [{:keys [from to]}]
+                                                (str from " --> " to))
+                                              file-templates))
+                                "\n")]
     {:hook-fn
      (fn []
        (backup-template-destinations file-templates)
@@ -65,7 +78,8 @@
               process-template
               clj->js
               utils/pretty-json
-              (utils/write-file to))))
+              (utils/write-file to))
+         (println "Successfully processed template " from " and wrote to " to ".")))
      :description (str "Weaver Hook:\n"
                        "Will process edn templates and generate json configs from them.\n"
                        "Existing files are backed up in weaver_configs/\n"
