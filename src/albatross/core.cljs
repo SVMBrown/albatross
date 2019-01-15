@@ -192,6 +192,7 @@
      (generate-deployment (or (:weaver/context template) {}) (dissoc template :weaver/context))))
   ;; If a context is provided, 
   ([context template]
+   ;;TODO: allow merge OR overwrite of provided context
    (let [template (dissoc template :weaver/context)
          config (assoc (weaver.core/process context template)
                        :albatross.weaver/context (update context
