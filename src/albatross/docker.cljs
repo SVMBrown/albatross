@@ -39,7 +39,7 @@
     (str "echo $" pass-env " | docker login --password-stdin -u " user " " url)
 
     :else
-    (str "docker login -u " user " -p " pass " " url)))
+    (str "docker login -u '" user "' -p '" pass "' " url)))
 
 (defn docker-logout-instruction [url]
   (str "docker logout " url))

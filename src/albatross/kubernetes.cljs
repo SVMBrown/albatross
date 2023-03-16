@@ -36,10 +36,29 @@
   [(str "echo 'applying k8s dir: " dir "'")
    (str "kubectl apply -f " dir)])
 
+(defmethod action-instructions :secret [{secret-type :secret-type
+                                         :as config}]
+  (case secret-type
+    :from-literal (-> config
+                      (dissoc :secret-type)
+                      (assoc :action-type :secret-literals)
+                      (action-instructions))
+    :from-file (-> config
+                   (dissoc :secret-type)
+                   (assoc :action-type :secret-files)
+                   (action-instructions))
+    ;; ELSE
+    (into
+     [(str "echo 'Unrecognized :secret-type \n" (pr-str secret-type) "\n using default :from-file'" )]
+     (-> config
+         (dissoc :secret-type)
+         (assoc :action-type :secret-files)
+         (action-instructions)))))
+
 ;; e.g. delete secret ... ; create secret generic <name> --from-file=<key>=<file> ...;
-(defmethod action-instructions :secret [{secret-name :name
-                                         keyname->file :config-map
-                                         :as action-config}]
+(defmethod action-instructions :secret-files [{secret-name :name
+                                               keyname->file :config-map
+                                               :as action-config}]
   [(str "echo 'deleting and recreating secret: " secret-name "'")
    (str "kubectl delete secret " secret-name " --ignore-not-found")
    (str "kubectl create secret generic " secret-name " "
@@ -48,6 +67,18 @@
                       (fn [[keyname file]]
                         (str "--from-file=" keyname "=" file))
                       keyname->file)))])
+
+(defmethod action-instructions :secret-literals [{secret-name    :name
+                                                  keyname->value :config-map
+                                                  :as action-config}]
+  [(str "echo 'deleting and recreating secret: " secret-name "'")
+   (str "kubectl delete secret " secret-name " --ignore-not-found")
+   (str "kubectl create secret generic " secret-name " "
+        (string/join " "
+                     (map
+                      (fn [[keyname value]]
+                        (str "--from-literal=" keyname "=" value))
+                      keyname->value)))])
 
 
 (defn k8s-cluster-instructions [{:keys [kubeconfig
