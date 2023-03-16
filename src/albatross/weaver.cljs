@@ -24,7 +24,7 @@
                         nil))]
         (utils/write-file (string/replace to #"^(\./)?" base-path) body)))))
 
-(defn expand-dirs [{:keys [from to] :as tmp}]
+(defn expand-dirs [{:keys [from to output-format] :or {output-format :json} :as tmp}]
   (let [to (or to
                (let [[match dir file :as from-all] (re-matches #"(.*/)([^/]*)$" from)]
                  dir)
@@ -35,7 +35,10 @@
             [_ to-dir to-file] (re-matches #"(.*/)([^/]*)$" to)
             final-to           (str to-dir (string/replace
                                             (or (not-empty to-file) from-file)
-                                            #"\.edn$" ".json"))]
+                                            #"\.edn$" (case output-format
+                                                        :json ".json"
+                                                        :edn  ".edn"
+                                                        ".json")))]
         [(assoc tmp :to final-to)])
 
       (re-matches #".*/$" from)
@@ -72,13 +75,11 @@
     {:hook-fn
      (fn []
        (backup-template-destinations file-templates)
-       (doseq [{:keys [from to] :as template} file-templates]
+       (doseq [{:keys [from to output-format] :as template} file-templates]
          (->> from
               utils/read-edn-file
               process-template
-              clj->js
-              utils/pretty-json
-              (utils/write-file to))
+              (utils/write-file-with-format output-format to))
          (println "Successfully processed template " from " and wrote to " to ".")))
      :description (str "Weaver Hook:\n"
                        "Will process edn templates and generate json configs from them.\n"

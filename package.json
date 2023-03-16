@@ -1,6 +1,6 @@
 {
   "name": "albatross-cljs",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Declarative Deployment Scripting tool",
   "license": "MIT",
   "dependencies": {
